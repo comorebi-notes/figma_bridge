@@ -12,6 +12,8 @@
 	<string>Figma ブリッジ</string>
 	<key>CFBundleExecutable</key>
 	<string>FigmaBridge</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>bi.comore.FigmaBridge</string>
 	<key>CFBundleInfoDictionaryVersion</key>

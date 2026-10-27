@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- macOS のアイコンの大きさの決まりに合わせ、1024 の枠の中に 824 の角丸の四角を置く。F の座標は 100 の枠で書いている -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#534AB7"/>
+  <path transform="translate(100 100) scale(8.24)" d="M33 24h36v13H47v8h18v12H47v19H33z" fill="#fff"/>
+</svg>

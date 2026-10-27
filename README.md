@@ -76,7 +76,9 @@ Claude Code --(client.ts)--> server.ts（127.0.0.1:3055） <--(WebSocket)-- Figm
 | `skill/paths.ts` | トークン、PID、ログの場所 |
 | `skill/plugin/` | Figma の開発用プラグイン「Claude Figma Bridge」。Figma が読み込む UI は、install.sh が `ui.html` から作る `ui.local.html` |
 | `app/` | サーバーの起動と停止、状態の表示を行うメニューバーのアプリ。SwiftUI で書いている |
+| `app/AppIcon.svg` | アプリのアイコンの元の絵。ここから作った `AppIcon.icns` を、install.sh がアプリに入れる |
 | `scripts/install.sh` | スキルを入れ、プラグインの合言葉を作り、アプリをビルドして置くスクリプト |
+| `scripts/make_icon.swift` | `app/AppIcon.svg` から `app/AppIcon.icns` を作るスクリプト |
 
 ### 必要なもの
 
@@ -155,5 +157,6 @@ Claude はスキル `figma_bridge` の手順（`skill/SKILL.md`）に従い、�
 - サーバーの動きをターミナルで見ながら使うときは、`bun skill/server.ts` で起動し、Ctrl+C で止めます。
 - 開発するときは `scripts/install.sh --link` で入れます。`skill/` の変更はすぐに反映されます。
 - アプリのソースを変えたら、`scripts/install.sh --link` を実行し直します。動いているアプリは終了してから入れ替わります。
+- アプリのアイコンを変えるときは、`app/AppIcon.svg` を直してから `swift scripts/make_icon.swift` を実行し、`app/AppIcon.icns` を作り直します。そのあと `scripts/install.sh --link` を実行し直します。
 - プラグインのファイルを変えたら、Figma でプラグインを開き直します。`ui.html` を変えたときは、その前に `scripts/install.sh --link` を実行し直して、`ui.local.html` を作り直します。
 - ポート番号（3055）を変えるときは、`skill/paths.ts`、`skill/plugin/manifest.json`、`skill/plugin/ui.html`、`app/Sources/FigmaBridge/Locations.swift` をそろえて直します。

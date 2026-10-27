@@ -43,9 +43,10 @@ fi
 
 swift build --package-path "$repo/app" -c release
 rm -rf "$bundle"
-mkdir -p "$bundle/Contents/MacOS"
+mkdir -p "$bundle/Contents/MacOS" "$bundle/Contents/Resources"
 cp "$repo/app/.build/release/FigmaBridge" "$bundle/Contents/MacOS/"
 cp "$repo/app/Info.plist" "$bundle/Contents/"
+cp "$repo/app/AppIcon.icns" "$bundle/Contents/Resources/"
 # 自分の Mac で使うだけなので、Apple Developer の証明書を使わない ad-hoc 署名にする
 codesign --force --sign - "$bundle"
 
