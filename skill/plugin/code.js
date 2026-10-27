@@ -2,7 +2,7 @@
 // server.ts から届いた命令を、Figma アプリで開いているファイルに対して実行する。
 // クラウドで動く Figma MCP（use_figma）が読み込めないローカルのフォント（Font Awesome 7 Pro など）も、アプリの中なら読み込める
 
-figma.showUI(__html__, { width: 320, height: 170, title: 'Claude Figma Bridge', themeColors: true })
+figma.showUI(__html__, { width: 240, height: 64, title: 'Claude Figma Bridge', themeColors: true })
 
 const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor
 
