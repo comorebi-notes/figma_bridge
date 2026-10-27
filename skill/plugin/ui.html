@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 12px; font: 12px/1.5 Inter, system-ui, sans-serif; color: var(--figma-color-text); background: var(--figma-color-bg); }
+  p { margin: 0 0 8px; }
+  .status { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+  .status::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--figma-color-icon-disabled); }
+  .status.is-connected::before { background: var(--figma-color-icon-success); }
+  .note, .log { color: var(--figma-color-text-secondary); }
+  .log { word-break: break-all; }
+</style>
+</head>
+<body>
+<p id="status" class="status">ブリッジのサーバーを待っています</p>
+<p class="note">このウィンドウを開いている間、AI から届いた命令をこのファイルで実行します。実行中は Figma のウィンドウを前面に出しておいてください。</p>
+<p id="log" class="log"></p>
+<script>
+  // server.ts の PORT に合わせる
+  const BRIDGE_URL = 'ws://localhost:3055/plugin'
+  const RETRY_MS = 2000
+  const statusElement = document.getElementById('status')
+  const logElement = document.getElementById('log')
+  let socket = null
+  let count = 0
+
+  const connect = () => {
+    socket = new WebSocket(BRIDGE_URL)
+    socket.onopen = () => {
+      statusElement.textContent = 'ブリッジに接続しました'
+      statusElement.classList.add('is-connected')
+      // 開いているファイルの名前を code.js から受け取り、サーバーへ知らせる。メニューバーのアプリが表示に使う
+      parent.postMessage({ pluginMessage: { type: 'hello' } }, '*')
+    }
+    socket.onclose = () => {
+      statusElement.textContent = 'ブリッジのサーバーを待っています'
+      statusElement.classList.remove('is-connected')
+      setTimeout(connect, RETRY_MS)
+    }
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data)
+      count += 1
+      logElement.textContent = `${count} 件目を実行中: ${message.command}`
+      parent.postMessage({ pluginMessage: message }, '*')
+    }
+  }
+
+  window.onmessage = (event) => {
+    const reply = event.data.pluginMessage
+    if (!reply) return
+    if (reply.type === 'progress') {
+      logElement.textContent = `${count} 件目を実行中: ${reply.text}`
+      return
+    }
+    if (reply.type === 'hello') {
+      if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(reply))
+      return
+    }
+    logElement.textContent = reply.ok ? `${count} 件目が完了: ${reply.command}` : `${count} 件目が失敗: ${reply.error}`
+    if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(reply))
+  }
+
+  connect()
+</script>
+</body>
+</html>

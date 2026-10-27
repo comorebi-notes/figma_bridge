@@ -1,0 +1,14 @@
+{
+  "name": "Claude Figma Bridge",
+  "id": "claude-figma-bridge",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma", "figjam", "slides"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "devAllowedDomains": ["http://localhost:3055", "ws://localhost:3055"],
+    "reasoning": "AI からの命令を中継するローカルのサーバー（~/.claude/skills/figma_bridge/server.ts）に接続します"
+  }
+}
