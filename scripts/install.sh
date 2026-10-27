@@ -31,6 +31,16 @@ else
   echo "スキル: $skill_dir（コピー）"
 fi
 
+# プラグインが接続するときに送る合言葉を作り、plugin/ui.html から合言葉入りの ui.local.html を作る。サーバーは、合言葉を知らない接続を断る
+# 場所は skill/paths.ts の PLUGIN_KEY_PATH に合わせる。2 回目からは同じ合言葉を使う
+state_dir="$HOME/Library/Application Support/figma_bridge"
+key_file="$state_dir/.plugin-key"
+mkdir -p -m 700 "$state_dir"
+if [ ! -s "$key_file" ]; then
+  (umask 077 && openssl rand -hex 24 > "$key_file")
+fi
+(umask 077 && sed "s/__PLUGIN_KEY__/$(cat "$key_file")/" "$skill_dir/plugin/ui.html" > "$skill_dir/plugin/ui.local.html")
+
 swift build --package-path "$repo/app" -c release
 rm -rf "$bundle"
 mkdir -p "$bundle/Contents/MacOS"

@@ -2,3 +2,4 @@
 app/.build/
 app/.swiftpm/
 .yomiyasu/
+skill/plugin/ui.local.html

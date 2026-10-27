@@ -19,6 +19,10 @@
 <script>
   // server.ts の PORT に合わせる
   const BRIDGE_URL = 'ws://localhost:3055/plugin'
+  // server.ts の PLUGIN_PROTOCOL に合わせる
+  const PLUGIN_PROTOCOL = 'figma-bridge'
+  // install.sh がこのファイルから ui.local.html を作るときに、合言葉に置き換える
+  const PLUGIN_KEY = '__PLUGIN_KEY__'
   const RETRY_MS = 2000
   const statusElement = document.getElementById('status')
   const logElement = document.getElementById('log')
@@ -31,7 +35,7 @@
   }
 
   const connect = () => {
-    socket = new WebSocket(BRIDGE_URL)
+    socket = new WebSocket(BRIDGE_URL, [PLUGIN_PROTOCOL, PLUGIN_KEY])
     socket.onopen = () => {
       statusElement.textContent = '接続済み'
       statusElement.classList.add('is-connected')

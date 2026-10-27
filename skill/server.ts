@@ -2,14 +2,18 @@
 //   bun server.ts [--exit-on-stdin-close]
 // --exit-on-stdin-close を付けると、標準入力が閉じたときに止まる。メニューバーのアプリが強制終了したときに、サーバーを残さないために使う
 import type { ServerWebSocket } from 'bun'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { EXPORT_DIR, PID_PATH, PORT, STATE_DIR, TOKEN_PATH } from './paths.ts'
+import { EXPORT_DIR, PID_PATH, PLUGIN_KEY_PATH, PORT, STATE_DIR, TOKEN_PATH } from './paths.ts'
 
 const DEFAULT_TIMEOUT_MS = 120_000
 // GET /history で返す件数。記録はメモリにだけ持ち、サーバーを止めると消える
 const HISTORY_LIMIT = 20
+// プラグインの UI が WebSocket の subprotocol に入れる名前。合言葉はこの次に入れて送ってくる
+const PLUGIN_PROTOCOL = 'figma-bridge'
+// 合言葉が合わないプラグインは 2 秒ごとにつなぎ直してくるため、断ったことをログに書くのは 1 分に 1 回までにする
+const KEY_REJECTION_LOG_INTERVAL_MS = 60_000
 
 type PluginReply = { id: string, command?: string, ok: boolean, result?: any, error?: string }
 // メニューバーのアプリに見せる命令の記録。命令の引数と結果は含めない
@@ -22,6 +26,7 @@ let plugin: ServerWebSocket<unknown> | null = null
 let fileName: string | null = null
 const pending = new Map<string, (reply: PluginReply) => void>()
 const history: HistoryEntry[] = []
+let keyRejectionLoggedAt = 0
 
 // sv-SE の書式で「2026-10-27 10:32:05」の形の時刻を付ける
 const log = (message: string) => console.log(`${new Date().toLocaleString('sv-SE')} ${message}`)
@@ -53,6 +58,21 @@ const record = (command: string, startedAt: number, reply: { ok: boolean, error?
     log(`命令 ${command} が失敗しました（${seconds}）: ${error}`)
   }
   history.splice(HISTORY_LIMIT)
+}
+
+// Web ページが作った sandbox の iframe からの接続も Origin が "null" になるため、Origin だけではプラグインと見分けられない。
+// そこで、install.sh がプラグインの UI に埋め込んだ合言葉を確かめる。Web ページは手元のファイルを読めないため、合言葉を知らない
+const pluginKeyProblem = (req: Request) => {
+  let key: string
+  try {
+    key = readFileSync(PLUGIN_KEY_PATH, 'utf8').trim()
+  } catch {
+    return `合言葉のファイル（${PLUGIN_KEY_PATH}）がありません。scripts/install.sh を実行してください`
+  }
+  const expected = Buffer.from(key)
+  const offered = (req.headers.get('sec-websocket-protocol') ?? '').split(',').map((value) => Buffer.from(value.trim()))
+  if (key && offered.some((value) => value.length === expected.length && timingSafeEqual(value, expected))) return null
+  return '合言葉が合いません。scripts/install.sh を実行し直してから、Figma でプラグインを開き直してください'
 }
 
 const relay = async (command: string, params: Record<string, any>, timeoutMs: number) => {
@@ -89,7 +109,16 @@ Bun.serve({
         log(`プラグイン以外からの接続を断りました（Origin: ${origin}）`)
         return new Response('forbidden', { status: 403 })
       }
-      return server.upgrade(req) ? undefined : new Response('upgrade failed', { status: 400 })
+      const problem = pluginKeyProblem(req)
+      if (problem) {
+        if (Date.now() - keyRejectionLoggedAt > KEY_REJECTION_LOG_INTERVAL_MS) {
+          keyRejectionLoggedAt = Date.now()
+          log(`プラグインからの接続を断りました。${problem}`)
+        }
+        return new Response('forbidden', { status: 403 })
+      }
+      // subprotocol を送ってきた接続には、使う subprotocol を返さないとブラウザが接続を切る。合言葉は返さない
+      return server.upgrade(req, { headers: { 'Sec-WebSocket-Protocol': PLUGIN_PROTOCOL } }) ? undefined : new Response('upgrade failed', { status: 400 })
     }
 
     if (req.headers.get('authorization') !== `Bearer ${token}`) {
