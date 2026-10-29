@@ -75,7 +75,7 @@ Figma MCP の `use_figma` は Figma のクラウドで動くため、利用者�
 bun ~/.claude/skills/figma_bridge/client.ts run script.js --args '{"nodeId":"12:34"}' --file-name "ファイル名"
 ```
 
-ファイルの中身は async 関数の本体として実行します。使える変数は `figma`、`args`（`--args` の値）、`log(...)`（結果の `logs` に足す）、`progress(text)`（プラグインのウィンドウに出す）です。書き方の決まりは `use_figma` と同じで、`figma-use` スキルに従います。`documentAccess` は `dynamic-page` なので、ノードは `getNodeByIdAsync` で取り、文字を変える前にフォントを `loadFontAsync` で読み込みます。戻り値は JSON にして返し、ノードは ID と種類と名前だけにします。標準入力から渡すときは、ファイル名の代わりに `-` を書きます。
+ファイルの中身は async 関数の本体として実行します。使える変数は `figma`、`args`（`--args` の値）、`log(...)`（結果の `logs` に足す）、`progress(text)`（プラグインのウィンドウに出す）です。書き方の決まりは `use_figma` と同じで、`figma-use` スキルに従います。`documentAccess` は `dynamic-page` なので、ノードは `getNodeByIdAsync` で取り、文字を変える前にフォントを `loadFontAsync` で読み込みます。インスタンスの元のコンポーネントは `mainComponent` では読めないため、`await node.getMainComponentAsync()` で取ります。`findOne` や `findAll` に渡す関数の中では `await` を使えないので、先に `findAllWithCriteria({ types: ['INSTANCE'] })` でインスタンスを集めてから、ループの中で取ります。ほかの API で `Cannot call with documentAccess: dynamic-page` と出たときも、エラー文が示す非同期の API に書き換えます。戻り値は JSON にして返し、ノードは ID と種類と名前だけにします。標準入力から渡すときは、ファイル名の代わりに `-` を書きます。
 
 ### fill-icon-names
 
